@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h2>Digital Holatlar (1 yoki 0)</h2>
+<canvas id="digitalChart" width="600" height="200"></canvas>
+
+<script>
+    // Digital chart uchun
+    const ctx2 = document.getElementById('digitalChart').getContext('2d');
+    const digitalData = {
+        labels: [],
+        datasets: [{
+            label: 'Digital Data',
+            borderColor: 'rgb(255, 99, 132)',
+            data: [],
+            fill: false,
+            stepped: true // 0 va 1 ni aniq ko‘rsatish uchun
+        }]
+    };
+
+    const digitalChart = new Chart(ctx2, {
+        type: 'line',
+        data: digitalData,
+        options: {
+            animation: false,
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    }
+                },
+                y: {
+                    min: -0.5,
+                    max: 1.5,
+                    ticks: {
+                        stepSize: 1
+                    },
+                    title: {
+                        display: true,
+                        text: 'State (0/1)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Digital API ma'lumotlarini olish uchun GET metodini ishlatamiz
+    function getDigitalData() {
+        // 5 sekundda bir marta API'dan ma'lumot olish
+        setInterval(() => {
+            fetch('/api/digital/?value=' + Math.random())  // Bu yerda random raqam yuboramiz
+                .then(response => response.json())
+                .then(data => {
+                    const value = data.value;
+                    const timestamp = new Date().toLocaleTimeString();
+
+                    digitalData.labels.push(timestamp);
+                    digitalData.datasets[0].data.push(value);
+
+                    if (digitalData.labels.length > 20) {
+                        digitalData.labels.shift();
+                        digitalData.datasets[0].data.shift();
+                    }
+
+                    digitalChart.update();
+                });
+        }, 5000); // 5 sekundda bir marta
+    }
+
+    // API'dan ma'lumotlarni olishni boshlash
+    getDigitalData();
+</script>
+
+</body>
+</html>

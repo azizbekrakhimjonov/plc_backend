@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sensor va Digital Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>Analog Sensor Ma'lumotlari</h2>
+    <canvas id="sensorChart" width="600" height="300"></canvas>
+
+    <h2>Digital Holatlar (1 yoki 0)</h2>
+    <canvas id="digitalChart" width="600" height="200"></canvas>
+
+    <script>
+        // Analog chart uchun
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorData = {
+            labels: [],
+            datasets: [{
+                label: 'Sensor Data',
+                borderColor: 'rgb(75, 192, 192)',
+                data: [],
+                fill: false,
+                tension: 0.1
+            }]
+        };
+
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: sensorData,
+            options: {
+                animation: false,
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Digital chart uchun
+        const ctx2 = document.getElementById('digitalChart').getContext('2d');
+        const digitalData = {
+            labels: [],
+            datasets: [{
+                label: 'Digital Data',
+                borderColor: 'rgb(255, 99, 132)',
+                data: [],
+                fill: false,
+                stepped: true, // 0 va 1 ni aniq ko‘rsatish uchun
+                pointRadius: 0 // No points on the chart
+            }]
+        };
+
+        const digitalChart = new Chart(ctx2, {
+            type: 'line',
+            data: digitalData,
+            options: {
+                animation: false,
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        min: -0.5,
+                        max: 1.5,
+                        ticks: {
+                            stepSize: 1
+                        },
+                        title: {
+                            display: true,
+                            text: 'State (0/1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Sensor websocket
+        const socket1 = new WebSocket('ws://' + window.location.host + '/ws/sensor-data/');
+        socket1.onmessage = function(e) {
+            const response = JSON.parse(e.data);
+            const value = parseFloat(response.data);
+            const timestamp = new Date().toLocaleTimeString();
+
+            sensorData.labels.push(timestamp);
+            sensorData.datasets[0].data.push(value);
+
+            if (sensorData.labels.length > 20) {
+                sensorData.labels.shift();
+                sensorData.datasets[0].data.shift();
+            }
+
+            sensorChart.update();
+        };
+
+        // Digital websocket
+        const socket2 = new WebSocket('ws://' + window.location.host + '/ws/digital-data/');
+        socket2.onmessage = function(e) {
+            const response = JSON.parse(e.data);
+            const value = parseInt(response.data); // 1 yoki 0
+            const timestamp = new Date().toLocaleTimeString();
+
+            digitalData.labels.push(timestamp);
+            digitalData.datasets[0].data.push(value);
+
+            if (digitalData.labels.length > 20) {
+                digitalData.labels.shift();
+                digitalData.datasets[0].data.shift();
+            }
+
+            digitalChart.update();
+        };
+    </script>
+</body>
+</html>
